@@ -170,7 +170,10 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                         <p className="text-slate-400 text-sm font-medium mt-1">Monitoring incoming orders from guest nodes...</p>
                     </motion.div>
                 ) : (
-                    <div className="grid grid-cols-[repeat(auto-fit,minmax(350px,1fr))] lg:grid-cols-[repeat(auto-fit,minmax(350px,1fr))] xl:grid-cols-[repeat(auto-fit,minmax(350px,33%))] gap-8 w-full items-start">
+                    <div className={`grid gap-8 w-full items-start ${orders.length === 1 ? 'grid-cols-1' :
+                            orders.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
+                                'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+                        }`}>
                         <AnimatePresence mode="popLayout">
                             {orders.map((order) => (
                                 <motion.div
@@ -184,10 +187,10 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                                     }}
                                     whileHover={{
                                         outline: "2px solid #000",
-                                        transition: { duration: 0.4, ease: "easeInOut" }
+                                        transition: { duration: 0 }
                                     }}
                                     exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                                    className={`glass-card p-0 overflow-hidden flex flex-col group transition-all duration-700 border-t-8 outline-offset-0 ${newOrderId === order.id ? 'border-t-teal-500' : 'border-t-slate-100'}`}
+                                    className={`glass-card p-0 overflow-hidden flex flex-col group border-t-8 outline-offset-0 ${newOrderId === order.id ? 'border-t-teal-500' : 'border-t-slate-100'}`}
                                 >
                                     {/* Card Header */}
                                     <div className="p-8 border-b border-slate-50 flex justify-between items-start bg-slate-50/30">
