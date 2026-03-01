@@ -170,73 +170,90 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                         <p className="text-slate-400 text-sm font-medium mt-1">Monitoring incoming orders from guest nodes...</p>
                     </motion.div>
                 ) : (
-                    <div className={`grid gap-8 w-full ${orders.length === 1 ? 'grid-cols-1' :
-                        orders.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
-                            'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
-                        }`}>
+                    <div className="grid grid-cols-1 md:grid-cols-6 xl:grid-cols-6 gap-8 w-full items-stretch">
                         <AnimatePresence mode="popLayout">
-                            {orders.map((order) => (
-                                <motion.div
-                                    key={order.id}
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{
-                                        opacity: 1,
-                                        scale: 1,
-                                        boxShadow: newOrderId === order.id ? "0 0 0 4px rgba(20, 184, 166, 0.2)" : "0 25px 50px -12px rgba(0, 0, 0, 0.05)"
-                                    }}
-                                    whileHover={{
-                                        outline: "2.5px solid #000",
-                                        transition: { duration: 0 }
-                                    }}
-                                    exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                                    className={`glass-card p-0 overflow-hidden flex flex-col group border-t-8 h-full outline-offset-0 ${newOrderId === order.id ? 'border-t-teal-500' : 'border-t-slate-100'}`}
-                                >
-                                    {/* Card Header */}
-                                    <div className="p-8 border-b border-slate-50 flex justify-between items-start bg-slate-50/30">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-3">
-                                                <h2 className="text-4xl font-extrabold tracking-tight text-slate-800">T-{order.table_number}</h2>
-                                                {newOrderId === order.id && (
-                                                    <span className="bg-teal-500 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider animate-pulse">New</span>
-                                                )}
-                                            </div>
-                                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{order.customer_name}</p>
-                                        </div>
-                                        <div className="bg-white border border-slate-100 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-sm">
-                                            <Clock size={14} className="text-teal-500" />
-                                            <span className="text-xs font-bold text-slate-600 tabular-nums">{formatTime(order.created_at)}</span>
-                                        </div>
-                                    </div>
+                            {orders.map((order, index) => {
+                                // Logic for orphans filling the row:
+                                // We use a 6-column grid to allow 1/1 (span 6), 1/2 (span 3), and 1/3 (span 2) splits.
+                                const total = orders.length;
 
-                                    {/* Items List */}
-                                    <div className="p-8 flex-1 space-y-5">
-                                        {order.items.map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center group/item p-1">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-xl font-extrabold text-teal-500/30 group-hover/item:text-teal-600 transition-colors tabular-nums">
-                                                        {item.quantity}×
-                                                    </span>
-                                                    <div>
-                                                        <span className="block text-base font-bold text-slate-700 uppercase tracking-tight">{item.name}</span>
-                                                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Confirmed Item</span>
+                                // Tablet spans (md) - max 2 cols
+                                const lastRowSizeMd = total % 2 || 2;
+                                const isLastRowMd = index >= total - lastRowSizeMd;
+                                const mdSpan = isLastRowMd
+                                    ? (lastRowSizeMd === 1 ? 'md:col-span-6' : 'md:col-span-3')
+                                    : 'md:col-span-3';
+
+                                // Desktop spans (xl) - max 3 cols
+                                const lastRowSizeXl = total % 3 || 3;
+                                const isLastRowXl = index >= total - lastRowSizeXl;
+                                const xlSpan = isLastRowXl
+                                    ? (lastRowSizeXl === 1 ? 'xl:col-span-6' : lastRowSizeXl === 2 ? 'xl:col-span-3' : 'xl:col-span-2')
+                                    : 'xl:col-span-2';
+
+                                return (
+                                    <motion.div
+                                        key={order.id}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{
+                                            opacity: 1,
+                                            scale: 1,
+                                            boxShadow: newOrderId === order.id ? "0 0 0 4px rgba(20, 184, 166, 0.2)" : "0 25px 50px -12px rgba(0, 0, 0, 0.05)"
+                                        }}
+                                        whileHover={{
+                                            outline: "2.5px solid #000",
+                                            transition: { duration: 0 }
+                                        }}
+                                        exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                                        className={`glass-card p-0 overflow-hidden flex flex-col group border-t-8 h-full outline-offset-0 ${mdSpan} ${xlSpan} ${newOrderId === order.id ? 'border-t-teal-500' : 'border-t-slate-100'}`}
+                                    >
+                                        {/* Card Header */}
+                                        <div className="p-8 border-b border-slate-50 flex justify-between items-start bg-slate-50/30">
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-3">
+                                                    <h2 className="text-4xl font-extrabold tracking-tight text-slate-800">T-{order.table_number}</h2>
+                                                    {newOrderId === order.id && (
+                                                        <span className="bg-teal-500 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider animate-pulse">New</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{order.customer_name}</p>
+                                            </div>
+                                            <div className="bg-white border border-slate-100 px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-sm">
+                                                <Clock size={14} className="text-teal-500" />
+                                                <span className="text-xs font-bold text-slate-600 tabular-nums">{formatTime(order.created_at)}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Items List */}
+                                        <div className="p-8 flex-1 space-y-5">
+                                            {order.items.map((item, idx) => (
+                                                <div key={idx} className="flex justify-between items-center group/item p-1">
+                                                    <div className="flex items-center gap-4">
+                                                        <span className="text-xl font-extrabold text-teal-500/30 group-hover/item:text-teal-600 transition-colors tabular-nums">
+                                                            {item.quantity}×
+                                                        </span>
+                                                        <div>
+                                                            <span className="block text-base font-bold text-slate-700 uppercase tracking-tight">{item.name}</span>
+                                                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Confirmed Item</span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                            ))}
+                                        </div>
 
-                                    {/* Action CTA */}
-                                    <div className="p-4 pt-0">
-                                        <button
-                                            onClick={() => markAsCompleted(order.id)}
-                                            className="w-full btn-gradient py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold group/btn"
-                                        >
-                                            Complete Service <Send size={16} />
-                                        </button>
-                                    </div>
-                                </motion.div>
-                            ))}
+                                        {/* Action CTA */}
+                                        <div className="p-4 pt-0">
+                                            <button
+                                                onClick={() => markAsCompleted(order.id)}
+                                                className="w-full btn-gradient py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold group/btn"
+                                            >
+                                                Complete Service <Send size={16} />
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
                         </AnimatePresence>
                     </div>
                 )}
