@@ -14,7 +14,7 @@
 
 .btn-gradient {
   @apply bg-teal-600 text-white font-bold tracking-widest uppercase transition-all duration-300;
-  @apply hover:bg-transparent hover:text-slate-900 hover:ring-2 hover:ring-slate-900 hover:shadow-2xl hover:shadow-slate-900/10 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply hover:bg-transparent hover:text-teal-600 hover:ring-2 hover:ring-teal-600 hover:shadow-2xl hover:shadow-teal-600/10 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
 .input-modern {
