@@ -124,7 +124,7 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                             <span className="text-[11px] font-black uppercase tracking-[0.4em] text-teal-600/80 bg-teal-50 px-3 py-1 rounded-full border border-teal-100 italic">Live Sync Operational</span>
                         </div>
                         <h1 className="text-6xl font-black tracking-tighter text-slate-800 uppercase leading-none">
-                            Kitchen <br />
+                            Order's <br />
                             <span className="text-teal-600">Terminal</span>
                         </h1>
                         <p className="text-slate-500 font-medium italic opacity-60">Session Node: {role.toUpperCase()} • ID {user.id.slice(0, 6)}</p>
