@@ -91,47 +91,45 @@ export default function TablePage() {
 
     if (!isNameEntered) {
         return (
-            <div className="flex min-h-screen items-center justify-center p-6 bg-gradient-to-br from-teal-50 via-blue-50 to-teal-100">
+            <div className="flex min-h-screen items-center justify-center p-6 bg-gradient-to-br from-teal-50 to-teal-100/50">
                 <motion.div
-                    initial="hidden"
-                    animate="visible"
-                    variants={containerVariants}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     className="glass-card w-full max-w-md space-y-10"
                 >
                     <div className="text-center space-y-4">
-                        <div className="w-20 h-20 bg-gradient-to-r from-teal-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-teal-500/20">
-                            <ShoppingBag className="text-white" size={36} />
+                        <div className="w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-teal-600/20">
+                            <ShoppingBag className="text-white" size={32} />
                         </div>
-                        <h1 className="text-4xl font-bold tracking-tight text-slate-800">In-Room Dining</h1>
-                        <p className="text-slate-500 font-medium tracking-wide flex items-center justify-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-teal-500" />
-                            Table {tableId} • Authentication Required
+                        <h1 className="text-4xl font-extrabold tracking-tight text-slate-800 uppercase">In-Room Dining</h1>
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] flex items-center justify-center gap-2">
+                            Table {tableId} • Authentication Node
                         </p>
                     </div>
 
                     <div className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-slate-600 uppercase tracking-widest ml-1">Your Name</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Your Identity</label>
                             <input
                                 type="text"
                                 placeholder="Full Name"
                                 value={customerName}
                                 onChange={(e) => setCustomerName(e.target.value)}
-                                className="input-modern w-full px-5 py-4 text-lg font-medium bg-white/50"
+                                className="input-modern w-full"
                             />
                         </div>
 
                         <button
                             onClick={() => customerName.trim() && setIsNameEntered(true)}
                             disabled={!customerName.trim()}
-                            className="btn-gradient w-full py-5 rounded-2xl flex items-center justify-center gap-3 text-lg disabled:opacity-50"
+                            className="btn-gradient w-full py-5 rounded-2xl flex items-center justify-center gap-3 text-sm disabled:opacity-50 uppercase tracking-widest"
                         >
-                            Start Your Service <ArrowRight size={20} />
+                            Initialize Node <ArrowRight size={18} />
                         </button>
                     </div>
 
-                    <div className="pt-8 text-center text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em]">
-                        Powered by Core Systems
+                    <div className="pt-8 text-center text-[10px] font-bold text-slate-300 uppercase tracking-[0.4em]">
+                        Authorized Interface v4.02
                     </div>
                 </motion.div>
             </div>
@@ -140,18 +138,18 @@ export default function TablePage() {
 
     if (orderStatus === 'success') {
         return (
-            <div className="flex min-h-screen items-center justify-center p-6 bg-gradient-to-br from-teal-50 via-blue-50 to-teal-100">
-                <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card text-center max-w-sm">
-                    <div className="w-24 h-24 bg-teal-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-teal-500/30">
-                        <CheckCircle2 size={56} />
+            <div className="flex min-h-screen items-center justify-center p-6 bg-gradient-to-br from-teal-50 to-teal-100/50">
+                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card text-center max-w-sm">
+                    <div className="w-20 h-20 bg-teal-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-teal-500/20">
+                        <CheckCircle2 size={40} />
                     </div>
-                    <h1 className="text-3xl font-bold mb-3 text-slate-800 tracking-tight">Order Placed!</h1>
-                    <p className="text-slate-500 font-medium mb-10">Your culinary experience is now being prepared for Table {tableId}.</p>
+                    <h1 className="text-3xl font-extrabold mb-3 text-slate-800 tracking-tight uppercase">Transmission Sent</h1>
+                    <p className="text-slate-500 font-medium mb-10 text-sm">Your order for Table {tableId} is being processed.</p>
                     <button
                         onClick={() => setOrderStatus('idle')}
-                        className="text-teal-600 font-bold uppercase tracking-widest text-sm hover:text-teal-700 transition-colors"
+                        className="text-teal-600 font-bold uppercase tracking-widest text-[10px] hover:text-teal-700 transition-colors"
                     >
-                        Order More Delights
+                        Review Menu Again
                     </button>
                 </motion.div>
             </div>
@@ -160,26 +158,25 @@ export default function TablePage() {
 
     return (
         <div className="min-h-screen pb-40">
-            <header className="sticky top-0 z-30 bg-white/60 backdrop-blur-xl border-b border-white/20 p-6">
+            <header className="sticky top-0 z-30 bg-white/60 backdrop-blur-xl border-b border-white p-6">
                 <div className="max-w-2xl mx-auto flex justify-between items-center">
                     <div className="space-y-1">
-                        <h2 className="text-2xl font-bold tracking-tight text-slate-800">In-Room Dining</h2>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 italic">Table {tableId} • Guest: {customerName}</p>
+                        <h2 className="text-2xl font-extrabold tracking-tight text-slate-800 uppercase">Service Node</h2>
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-teal-600">Table {tableId} • Guest: {customerName}</p>
                     </div>
                     <motion.button
-                        whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setShowCartDrawer(true)}
-                        className="relative bg-white shadow-md p-4 rounded-2xl text-slate-700 hover:text-teal-600 transition-all border border-slate-50"
+                        className="relative bg-white shadow-xl shadow-teal-900/5 p-4 rounded-2xl text-slate-700 hover:text-teal-600 border border-slate-50"
                     >
-                        <ShoppingCart size={24} />
+                        <ShoppingCart size={22} />
                         <AnimatePresence>
                             {cartItemsCount > 0 && (
                                 <motion.span
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
                                     exit={{ scale: 0 }}
-                                    className="absolute -top-3 -right-3 bg-gradient-to-r from-teal-500 to-blue-600 text-white text-[11px] font-black w-7 h-7 flex items-center justify-center rounded-full shadow-lg shadow-teal-500/30"
+                                    className="absolute -top-2 -right-2 bg-teal-600 text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-full shadow-lg shadow-teal-600/30"
                                 >
                                     {cartItemsCount}
                                 </motion.span>
@@ -192,49 +189,48 @@ export default function TablePage() {
             <main className="max-w-2xl mx-auto p-6 space-y-12 mt-8">
                 {/* Menu Sections */}
                 {Array.from(new Set(MENU.map(i => i.category))).map((category) => (
-                    <section key={category} className="space-y-6">
+                    <section key={category} className="space-y-8">
                         <div className="flex items-center gap-4">
-                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 whitespace-nowrap">{category}</h3>
-                            <div className="h-[2px] w-full bg-slate-200/50 rounded-full" />
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-300 bg-white px-3 py-1 rounded-lg shadow-sm border border-slate-50">{category}</h3>
+                            <div className="h-px flex-1 bg-slate-200/50" />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {MENU.filter(item => item.category === category).map((item) => (
                                 <motion.div
                                     key={item.id}
                                     layout
-                                    whileHover={{ y: -5 }}
-                                    className="glass-card flex flex-col justify-between group h-full relative"
+                                    className="glass-card border border-white p-6 flex flex-col justify-between h-full group"
                                 >
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-start">
-                                            <h4 className="font-bold text-slate-800 text-lg leading-tight group-hover:text-teal-600 transition-colors uppercase tracking-tight">{item.name}</h4>
-                                            {item.id === 1 && <Star size={16} className="text-yellow-400 fill-yellow-400" />}
+                                            <h4 className="font-bold text-slate-800 text-lg uppercase tracking-tight group-hover:text-teal-600 transition-colors leading-tight">{item.name}</h4>
+                                            {item.id === 1 && <Star size={14} className="text-yellow-400 fill-yellow-400" />}
                                         </div>
-                                        <p className="text-slate-500 text-xs font-medium leading-relaxed italic">{item.description}</p>
+                                        <p className="text-slate-400 text-[11px] font-medium leading-relaxed italic">{item.description}</p>
                                     </div>
 
-                                    <div className="mt-6 flex items-center justify-between gap-4">
-                                        <span className="text-2xl font-black text-slate-800 tabular-nums tracking-tighter">₹{item.price}</span>
-                                        <div className="flex items-center gap-3">
+                                    <div className="mt-8 flex items-center justify-between gap-4">
+                                        <span className="text-2xl font-extrabold text-slate-800 tabular-nums">₹{item.price}</span>
+                                        <div className="flex items-center gap-2">
                                             {cart[item.id] ? (
-                                                <div className="flex items-center bg-teal-50 rounded-xl p-1 border border-teal-100 shadow-inner">
-                                                    <button onClick={() => removeFromCart(item.id)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-teal-600">
-                                                        <Minus size={18} strokeWidth={3} />
+                                                <div className="flex items-center bg-teal-50 rounded-xl p-1 border border-teal-100">
+                                                    <button onClick={() => removeFromCart(item.id)} className="w-9 h-9 flex items-center justify-center hover:bg-white rounded-lg transition-all text-teal-600">
+                                                        <Minus size={16} strokeWidth={3} />
                                                     </button>
-                                                    <span className="w-8 text-center font-black text-slate-800 tabular-nums">
+                                                    <span className="w-6 text-center font-bold text-slate-700 tabular-nums text-sm">
                                                         {cart[item.id]}
                                                     </span>
-                                                    <button onClick={() => addToCart(item.id)} className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-lg transition-all text-teal-600">
-                                                        <Plus size={18} strokeWidth={3} />
+                                                    <button onClick={() => addToCart(item.id)} className="w-9 h-9 flex items-center justify-center hover:bg-white rounded-lg transition-all text-teal-600">
+                                                        <Plus size={16} strokeWidth={3} />
                                                     </button>
                                                 </div>
                                             ) : (
                                                 <button
                                                     onClick={() => addToCart(item.id)}
-                                                    className="bg-white text-teal-600 w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm border border-slate-100 hover:bg-teal-500 hover:text-white transition-all transform hover:rotate-90"
+                                                    className="bg-white text-teal-600 w-11 h-11 flex items-center justify-center rounded-2xl shadow-lg shadow-teal-900/5 border border-slate-50 hover:bg-teal-600 hover:text-white transition-all transform active:scale-90"
                                                 >
-                                                    <Plus size={24} strokeWidth={3} />
+                                                    <Plus size={22} strokeWidth={3} />
                                                 </button>
                                             )}
                                         </div>
@@ -255,7 +251,7 @@ export default function TablePage() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setShowCartDrawer(false)}
-                            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40"
+                            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40"
                         />
                         <motion.div
                             initial={{ x: '100%' }}
@@ -264,41 +260,41 @@ export default function TablePage() {
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
                             className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-50 shadow-2xl flex flex-col"
                         >
-                            <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+                            <div className="p-8 border-b border-slate-50 flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-2xl font-black tracking-tight text-slate-800">Your Selection</h3>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 italic">Review before transmission</p>
+                                    <h3 className="text-2xl font-extrabold tracking-tight text-slate-800 uppercase">Selection Review</h3>
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-teal-600 italic">Table {tableId} • Authorized Nodes</p>
                                 </div>
                                 <button
                                     onClick={() => setShowCartDrawer(false)}
-                                    className="p-3 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors"
+                                    className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors text-slate-400"
                                 >
-                                    <X size={24} className="text-slate-600" />
+                                    <X size={20} />
                                 </button>
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-8 space-y-6">
                                 {MENU.filter(item => cart[item.id]).length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4">
-                                        <ShoppingBag size={80} strokeWidth={1} />
-                                        <p className="font-bold uppercase tracking-[0.2em] text-sm">Your basket is empty</p>
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-200 space-y-4">
+                                        <ShoppingBag size={64} strokeWidth={1} />
+                                        <p className="font-bold uppercase tracking-widest text-[10px]">Registry Empty</p>
                                     </div>
                                 ) : (
                                     MENU.filter(item => cart[item.id]).map(item => (
                                         <div key={item.id} className="flex justify-between items-center group">
                                             <div className="space-y-1">
-                                                <h5 className="font-bold text-slate-800 uppercase tracking-tight">{item.name}</h5>
-                                                <p className="text-[10px] font-bold text-slate-400 tabular-nums tracking-widest uppercase">Verified Plate • ₹{item.price}</p>
+                                                <h5 className="font-bold text-slate-800 uppercase tracking-tight text-sm">{item.name}</h5>
+                                                <p className="text-[9px] font-bold text-slate-400 tracking-widest uppercase italic">Verified Plate • ₹{item.price}</p>
                                             </div>
                                             <div className="flex items-center gap-4 bg-teal-50 rounded-xl p-1 border border-teal-100">
                                                 <button onClick={() => removeFromCart(item.id)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-teal-600">
-                                                    <Minus size={16} strokeWidth={3} />
+                                                    <Minus size={14} strokeWidth={3} />
                                                 </button>
-                                                <span className="w-6 text-center font-black text-slate-800 tabular-nums">
+                                                <span className="w-5 text-center font-bold text-slate-700 tabular-nums text-xs">
                                                     {cart[item.id]}
                                                 </span>
                                                 <button onClick={() => addToCart(item.id)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-lg transition-all text-teal-600">
-                                                    <Plus size={16} strokeWidth={3} />
+                                                    <Plus size={14} strokeWidth={3} />
                                                 </button>
                                             </div>
                                         </div>
@@ -308,15 +304,15 @@ export default function TablePage() {
 
                             <div className="p-8 bg-slate-50 border-t border-slate-100 space-y-8">
                                 <div className="flex justify-between items-end">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Total Valuation</span>
-                                    <span className="text-3xl font-black text-teal-600 tracking-tighter tabular-nums">₹{totalPrice}</span>
+                                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 leading-none">Total Valuation</span>
+                                    <span className="text-3xl font-extrabold text-teal-600 tracking-tight tabular-nums leading-none">₹{totalPrice}</span>
                                 </div>
                                 <button
                                     onClick={placeOrder}
                                     disabled={isPlacingOrder || cartItemsCount === 0}
-                                    className="btn-gradient w-full py-6 rounded-3xl flex items-center justify-center gap-4 text-lg disabled:opacity-50 shadow-xl shadow-teal-500/20"
+                                    className="btn-gradient w-full py-6 rounded-2xl flex items-center justify-center gap-4 text-xs font-bold uppercase tracking-[0.2em] shadow-xl shadow-teal-600/20"
                                 >
-                                    {isPlacingOrder ? <Loader2 className="animate-spin" /> : <>Authorize Transmission <ArrowRight size={20} /></>}
+                                    {isPlacingOrder ? <Loader2 className="animate-spin" /> : <>Send Transmission <ArrowRight size={18} /></>}
                                 </button>
                             </div>
                         </motion.div>
