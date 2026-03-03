@@ -124,7 +124,7 @@ export default function TablePage() {
                             disabled={!customerName.trim()}
                             className="btn-gradient w-full py-5 rounded-2xl flex items-center justify-center gap-3 text-sm disabled:opacity-50 uppercase tracking-widest"
                         >
-                            Initialize Node <ArrowRight size={18} />
+                            Go-to menu! <ArrowRight size={18} />
                         </button>
                     </div>
 
