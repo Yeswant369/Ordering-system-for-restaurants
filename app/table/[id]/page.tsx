@@ -338,7 +338,7 @@ export default function TablePage() {
                                     <div className="bg-white text-teal-600 font-black w-10 h-10 flex items-center justify-center rounded-full text-sm">
                                         {cartItemsCount}
                                     </div>
-                                    <span className="text-xs font-black uppercase tracking-[0.3em]">Review Selection</span>
+                                    <span className="text-xs font-black uppercase tracking-[0.5em]">Confirm Selection</span>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <span className="text-xl font-black tabular-nums tracking-tighter italic">₹{totalPrice}</span>
