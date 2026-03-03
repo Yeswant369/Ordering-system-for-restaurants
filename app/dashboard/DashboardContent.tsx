@@ -167,7 +167,7 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                             <ChefHat size={40} className="text-teal-200" />
                         </div>
                         <h2 className="text-2xl font-bold text-slate-700">All Platforms Clear</h2>
-                        <p className="text-slate-400 text-sm font-medium mt-1">Monitoring incoming orders from guest nodes...</p>
+                        <p className="text-slate-400 text-sm font-medium mt-1">Monitoring incoming orders from guests...</p>
                     </motion.div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-6 xl:grid-cols-6 gap-8 w-full items-stretch">
