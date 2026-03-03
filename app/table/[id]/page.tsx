@@ -312,7 +312,7 @@ export default function TablePage() {
                                     disabled={isPlacingOrder || cartItemsCount === 0}
                                     className="btn-gradient w-full py-6 rounded-2xl flex items-center justify-center gap-4 text-xs font-bold uppercase tracking-[0.2em] shadow-xl shadow-teal-600/20"
                                 >
-                                    {isPlacingOrder ? <Loader2 className="animate-spin" /> : <>Send Transmission <ArrowRight size={18} /></>}
+                                    {isPlacingOrder ? <Loader2 className="animate-spin" /> : <>Confirm Order <ArrowRight size={18} /></>}
                                 </button>
                             </div>
                         </motion.div>
