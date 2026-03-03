@@ -143,7 +143,7 @@ export default function TablePage() {
                     <div className="w-20 h-20 bg-teal-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-teal-500/20">
                         <CheckCircle2 size={40} />
                     </div>
-                    <h1 className="text-3xl font-extrabold mb-3 text-slate-800 tracking-tight uppercase">Transmission Sent</h1>
+                    <h1 className="text-3xl font-extrabold mb-3 text-slate-800 tracking-tight uppercase">Order Sent</h1>
                     <p className="text-slate-500 font-medium mb-10 text-sm">Your order for Table {tableId} is being processed.</p>
                     <button
                         onClick={() => setOrderStatus('idle')}
@@ -161,7 +161,7 @@ export default function TablePage() {
             <header className="sticky top-0 z-30 bg-white/60 backdrop-blur-xl border-b border-white p-6">
                 <div className="max-w-2xl mx-auto flex justify-between items-center">
                     <div className="space-y-1">
-                        <h2 className="text-2xl font-extrabold tracking-tight text-slate-800 uppercase">Service Node</h2>
+                        <h2 className="text-2xl font-extrabold tracking-tight text-slate-800 uppercase">Menu</h2>
                         <p className="text-[9px] font-black uppercase tracking-[0.2em] text-teal-600">Table {tableId} • Guest: {customerName}</p>
                     </div>
                     <motion.button
