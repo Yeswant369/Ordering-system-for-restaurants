@@ -212,7 +212,7 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                                         <div className="p-8 border-b border-slate-50 flex justify-between items-start bg-slate-50/30">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-3">
-                                                    <h2 className="text-4xl font-extrabold tracking-tight text-slate-800">T-{order.table_number}</h2>
+                                                    <h2 className="text-4xl font-extrabold tracking-tight text-slate-800">Table-{order.table_number}</h2>
                                                     {newOrderId === order.id && (
                                                         <span className="bg-teal-500 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider animate-pulse">New</span>
                                                     )}
