@@ -232,7 +232,8 @@ Thank you for dining with us!
     }
 
     if (orderStatus === 'billed') {
-        const upiUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=Restaurant&am=${finalTotal}&cu=INR`;
+        // Formatting the amount with 2 decimal places and adding a transaction note (tn) helps prevent some UPI apps from rejecting the request.
+        const upiUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=Restaurant&tn=${encodeURIComponent(`Table ${tableId} Bill`)}&am=${finalTotal.toFixed(2)}&cu=INR`;
 
         return (
             <div className="flex min-h-screen items-center justify-center p-6 bg-gradient-to-br from-teal-50 to-teal-100/50">
