@@ -34,7 +34,7 @@ export default function TablePage() {
     const [isNameEntered, setIsNameEntered] = useState(false);
     const [cart, setCart] = useState<Record<number, number>>({});
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-    const [orderStatus, setOrderStatus] = useState<'idle' | 'pending' | 'billed' | 'paid'>('idle');
+    const [orderStatus, setOrderStatus] = useState<'idle' | 'pending' | 'billed' | 'cash_pending' | 'paid'>('idle');
     const [orderId, setOrderId] = useState<string | null>(null);
     const [finalTotal, setFinalTotal] = useState<number>(0);
     const [showCartDrawer, setShowCartDrawer] = useState(false);
@@ -56,6 +56,8 @@ export default function TablePage() {
                         setFinalTotal(updatedOrder.total_amount);
                     } else if (updatedOrder.status === 'paid') {
                         setOrderStatus('paid');
+                    } else if (updatedOrder.status === 'cash_pending') {
+                        setOrderStatus('cash_pending');
                     }
                 }
             )
@@ -120,14 +122,15 @@ export default function TablePage() {
     const submitPayment = async (mode: 'cash' | 'upi') => {
         if (!orderId) return;
         setIsPlacingOrder(true);
+        const newStatus = mode === 'cash' ? 'cash_pending' : 'paid';
         const { error } = await supabase
             .from('orders')
-            .update({ status: 'paid', payment_mode: mode })
+            .update({ status: newStatus, payment_mode: mode })
             .eq('id', orderId);
 
         setIsPlacingOrder(false);
         if (!error) {
-            setOrderStatus('paid');
+            setOrderStatus(newStatus);
         } else {
             console.error("Failed to submit payment:", error);
         }
@@ -249,6 +252,23 @@ export default function TablePage() {
                         >
                             {isPlacingOrder ? <Loader2 className="animate-spin" /> : <>Pay with Cash <Banknote size={18} /></>}
                         </button>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
+
+    if (orderStatus === 'cash_pending') {
+        return (
+            <div className="flex min-h-screen items-center justify-center p-6 bg-gradient-to-br from-teal-50 to-teal-100/50">
+                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card text-center max-w-sm">
+                    <div className="w-20 h-20 bg-teal-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-teal-500/20">
+                        <Banknote size={40} />
+                    </div>
+                    <h1 className="text-3xl font-extrabold mb-3 text-slate-800 tracking-tight uppercase">Cash Payment</h1>
+                    <p className="text-slate-500 font-medium mb-10 text-sm">Please hand over the cash to the staff. Your payment will be confirmed shortly...</p>
+                    <div className="flex justify-center">
+                        <Loader2 className="animate-spin text-teal-500" size={32} />
                     </div>
                 </motion.div>
             </div>

@@ -65,6 +65,18 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                     const updatedOrder = payload.new as Order;
                     if (updatedOrder.status === 'billed') {
                         setOrders((prev) => prev.filter(o => o.id !== updatedOrder.id));
+                    } else if (updatedOrder.status === 'cash_pending') {
+                        setOrders((prev) => {
+                             if (!prev.find(o => o.id === updatedOrder.id)) {
+                                 return [updatedOrder, ...prev];
+                             }
+                             return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
+                        });
+                        setNewOrderId(updatedOrder.id);
+                        setTimeout(() => setNewOrderId(null), 10000);
+                        if (audioRef.current) {
+                            audioRef.current.play().catch(e => console.error("Sound play failed:", e));
+                        }
                     } else if (updatedOrder.status === 'paid') {
                         setOrders((prev) => prev.filter(o => o.id !== updatedOrder.id));
                         setPayments((prev) => [updatedOrder, ...prev]);
@@ -86,7 +98,7 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         const { data: pendingData } = await supabase
             .from('orders')
             .select('*')
-            .eq('status', 'pending')
+            .in('status', ['pending', 'cash_pending'])
             .order('created_at', { ascending: false });
 
         if (pendingData) {
@@ -109,6 +121,18 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
     const handleLogout = async () => {
         await supabase.auth.signOut();
         window.location.href = '/login';
+    };
+
+    const confirmCashPayment = async (order: Order) => {
+        setOrders(prev => prev.filter(o => o.id !== order.id));
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: 'paid' })
+            .eq('id', order.id);
+        if (error) {
+            console.error("Error confirming payment:", error);
+            fetchData();
+        }
     };
 
     const generateBill = async (order: Order) => {
@@ -276,14 +300,25 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                                                 <span className="text-2xl font-black text-slate-800">₹{orderTotal}</span>
                                             </div>
 
-                                            <div className="p-4 bg-slate-50/50">
-                                                <button
-                                                    onClick={() => generateBill(order)}
-                                                    className="w-full btn-gradient py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold group/btn shadow-teal-500/20 shadow-lg"
-                                                >
-                                                    Generate Bill <FileText size={16} />
-                                                </button>
-                                            </div>
+                                            {order.status === 'cash_pending' ? (
+                                                <div className="p-4 bg-yellow-50/50">
+                                                    <button
+                                                        onClick={() => confirmCashPayment(order)}
+                                                        className="w-full bg-yellow-400 text-yellow-900 py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold shadow-yellow-400/20 shadow-lg hover:bg-yellow-500 transition-colors"
+                                                    >
+                                                        Confirm Cash (₹{orderTotal}) <CheckCircle2 size={16} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="p-4 bg-slate-50/50">
+                                                    <button
+                                                        onClick={() => generateBill(order)}
+                                                        className="w-full btn-gradient py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold group/btn shadow-teal-500/20 shadow-lg"
+                                                    >
+                                                        Generate Bill <FileText size={16} />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </motion.div>
                                     );
                                 })}
