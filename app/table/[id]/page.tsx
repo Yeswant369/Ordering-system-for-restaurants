@@ -232,8 +232,9 @@ Thank you for dining with us!
     }
 
     if (orderStatus === 'billed') {
-        // Formatting the amount with 2 decimal places and adding a transaction note (tn) helps prevent some UPI apps from rejecting the request.
-        const upiUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=Restaurant&tn=${encodeURIComponent(`Table ${tableId} Bill`)}&am=${finalTotal.toFixed(2)}&cu=INR`;
+        // Formatting the amount with 2 decimal places and adding a Merchant Code (mc=5812 for restaurants) 
+        // helps bypass the security issue where UPI apps block deep links to personal UPI IDs.
+        const upiUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=Restaurant&mc=5812&tr=${orderId}&am=${finalTotal.toFixed(2)}&cu=INR`;
 
         return (
             <div className="flex min-h-screen items-center justify-center p-6 bg-gradient-to-br from-teal-50 to-teal-100/50">
@@ -268,8 +269,15 @@ Thank you for dining with us!
                             href={upiUri}
                             className="w-full btn-gradient py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold shadow-xl shadow-teal-600/20 block"
                         >
-                            Pay directly via App <ShieldCheck size={18} />
+                            Open UPI App to Pay <ShieldCheck size={18} />
                         </a>
+                        <button
+                            onClick={() => submitPayment('upi')}
+                            disabled={isPlacingOrder}
+                            className="w-full border-2 border-teal-500 text-teal-600 py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold hover:bg-teal-50 transition-all active:scale-95"
+                        >
+                            {isPlacingOrder ? <Loader2 className="animate-spin" /> : <>I have successfully paid via UPI</>}
+                        </button>
                         <button
                             onClick={() => submitPayment('cash')}
                             disabled={isPlacingOrder}
