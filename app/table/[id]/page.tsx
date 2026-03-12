@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { Plus, Minus, ShoppingCart, CheckCircle2, Loader2, ArrowRight, Star, X, ShoppingBag, QrCode, Banknote, ShieldCheck } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, CheckCircle2, Loader2, ArrowRight, Star, X, ShoppingBag, QrCode, Banknote, ShieldCheck, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
 
@@ -136,6 +136,37 @@ export default function TablePage() {
         }
     };
 
+    const downloadBill = () => {
+        const orderItemsText = MENU.filter(item => cart[item.id]).map(item => `${item.name} (${cart[item.id]}x) - ₹${item.price * cart[item.id]}`).join('\n');
+        
+        const receiptText = `
+=================================
+       IN-ROOM DINING RECEIPT
+=================================
+Table: ${tableId}
+Guest: ${customerName}
+Order Tracking ID: ${orderId}
+
+ITEMS:
+${orderItemsText || 'Items not available in current session'}
+
+---------------------------------
+TOTAL PAID: ₹${finalTotal}
+---------------------------------
+Thank you for dining with us!
+=================================
+        `;
+        const blob = new Blob([receiptText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Bill_Table${tableId}_${new Date().getTime()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     if (!isNameEntered) {
         return (
             <div className="flex min-h-screen items-center justify-center p-6 bg-gradient-to-br from-teal-50 to-teal-100/50">
@@ -239,13 +270,6 @@ export default function TablePage() {
                             Pay directly via App <ShieldCheck size={18} />
                         </a>
                         <button
-                            onClick={() => submitPayment('upi')}
-                            disabled={isPlacingOrder}
-                            className="w-full border-2 border-teal-500 text-teal-600 py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold hover:bg-teal-50 transition-all active:scale-95"
-                        >
-                            {isPlacingOrder ? <Loader2 className="animate-spin" /> : <>I already paid via QR</>}
-                        </button>
-                        <button
                             onClick={() => submitPayment('cash')}
                             disabled={isPlacingOrder}
                             className="w-full bg-slate-800 text-white py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-lg shadow-slate-900/20"
@@ -284,15 +308,23 @@ export default function TablePage() {
                     </div>
                     <h1 className="text-3xl font-extrabold mb-3 text-slate-800 tracking-tight uppercase">Payment Complete</h1>
                     <p className="text-slate-500 font-medium mb-10 text-sm">Thank you for dining with us! Your payment has been marked successfully.</p>
-                    <button
-                        onClick={() => {
-                            setOrderStatus('idle');
-                            setOrderId(null);
-                        }}
-                        className="text-teal-600 font-bold uppercase tracking-widest text-[10px] hover:text-teal-700 transition-colors"
-                    >
-                        Start New Order
-                    </button>
+                    <div className="flex flex-col gap-4">
+                        <button
+                            onClick={downloadBill}
+                            className="w-full bg-slate-800 text-white py-4 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold hover:bg-slate-900 transition-all shadow-lg shadow-slate-900/20"
+                        >
+                            Download Bill <Download size={16} />
+                        </button>
+                        <button
+                            onClick={() => {
+                                setOrderStatus('idle');
+                                setOrderId(null);
+                            }}
+                            className="text-teal-600 font-bold uppercase tracking-widest text-[10px] hover:text-teal-700 transition-colors py-2"
+                        >
+                            Start New Order
+                        </button>
+                    </div>
                 </motion.div>
             </div>
         );

@@ -63,19 +63,19 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                 { event: 'UPDATE', schema: 'public', table: 'orders' },
                 (payload) => {
                     const updatedOrder = payload.new as Order;
-                    if (updatedOrder.status === 'billed') {
-                        setOrders((prev) => prev.filter(o => o.id !== updatedOrder.id));
-                    } else if (updatedOrder.status === 'cash_pending') {
+                    if (updatedOrder.status === 'billed' || updatedOrder.status === 'cash_pending') {
                         setOrders((prev) => {
                              if (!prev.find(o => o.id === updatedOrder.id)) {
                                  return [updatedOrder, ...prev];
                              }
                              return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
                         });
-                        setNewOrderId(updatedOrder.id);
-                        setTimeout(() => setNewOrderId(null), 10000);
-                        if (audioRef.current) {
-                            audioRef.current.play().catch(e => console.error("Sound play failed:", e));
+                        if (updatedOrder.status !== 'billed') { // only pulse for new orders or cash requests
+                            setNewOrderId(updatedOrder.id);
+                            setTimeout(() => setNewOrderId(null), 10000);
+                            if (audioRef.current) {
+                                audioRef.current.play().catch(e => console.error("Sound play failed:", e));
+                            }
                         }
                     } else if (updatedOrder.status === 'paid') {
                         setOrders((prev) => prev.filter(o => o.id !== updatedOrder.id));
@@ -98,7 +98,7 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         const { data: pendingData } = await supabase
             .from('orders')
             .select('*')
-            .in('status', ['pending', 'cash_pending'])
+            .in('status', ['pending', 'cash_pending', 'billed'])
             .order('created_at', { ascending: false });
 
         if (pendingData) {
@@ -123,11 +123,13 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         window.location.href = '/login';
     };
 
-    const confirmCashPayment = async (order: Order) => {
+    const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
+
+    const confirmPayment = async (order: Order, mode: 'cash' | 'upi') => {
         setOrders(prev => prev.filter(o => o.id !== order.id));
         const { error } = await supabase
             .from('orders')
-            .update({ status: 'paid' })
+            .update({ status: 'paid', payment_mode: mode })
             .eq('id', order.id);
         if (error) {
             console.error("Error confirming payment:", error);
@@ -138,7 +140,8 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
     const generateBill = async (order: Order) => {
         const total = order.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
         
-        setOrders(prev => prev.filter(o => o.id !== order.id));
+        // Optimistic update
+        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'billed', total_amount: total } : o));
 
         const { error } = await supabase
             .from('orders')
@@ -303,11 +306,29 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                                             {order.status === 'cash_pending' ? (
                                                 <div className="p-4 bg-yellow-50/50">
                                                     <button
-                                                        onClick={() => confirmCashPayment(order)}
+                                                        onClick={() => confirmPayment(order, 'cash')}
                                                         className="w-full bg-yellow-400 text-yellow-900 py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold shadow-yellow-400/20 shadow-lg hover:bg-yellow-500 transition-colors"
                                                     >
                                                         Confirm Cash (₹{orderTotal}) <CheckCircle2 size={16} />
                                                     </button>
+                                                </div>
+                                            ) : order.status === 'billed' ? (
+                                                <div className="p-4 bg-orange-50/50 flex flex-col gap-3">
+                                                    <span className="text-center text-[10px] font-bold text-orange-600 uppercase tracking-widest animate-pulse">Payment Pending</span>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => confirmPayment(order, 'upi')}
+                                                            className="flex-1 bg-white border-2 border-orange-200 text-orange-600 py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest font-bold hover:bg-orange-100 transition-colors"
+                                                        >
+                                                            Verify UPI <CreditCard size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => confirmPayment(order, 'cash')}
+                                                            className="flex-1 bg-white border-2 border-orange-200 text-orange-600 py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest font-bold hover:bg-orange-100 transition-colors"
+                                                        >
+                                                            Verify Cash <Banknote size={14} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <div className="p-4 bg-slate-50/50">
@@ -338,31 +359,67 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                         ) : (
                             <div className="divide-y divide-slate-100">
                                 {payments.map((payment) => (
-                                    <div key={payment.id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                                        <div className="flex items-center gap-6">
-                                            <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center text-teal-600 font-bold shadow-sm">
-                                                T-{payment.table_number}
+                                    <div key={payment.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
+                                        <div 
+                                            className="p-6 flex items-center justify-between cursor-pointer"
+                                            onClick={() => setExpandedPaymentId(expandedPaymentId === payment.id ? null : payment.id)}
+                                        >
+                                            <div className="flex items-center gap-6">
+                                                <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center text-teal-600 font-bold shadow-sm">
+                                                    T-{payment.table_number}
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-slate-800 text-base">{payment.customer_name}</h3>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                                            <Clock size={10} /> {formatTime(payment.created_at)}
+                                                        </span>
+                                                        <span className="text-slate-300">•</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                                            {payment.payment_mode === 'cash' ? <Banknote size={10} /> : <CreditCard size={10} />} 
+                                                            Mode: {payment.payment_mode || 'Unknown'}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="font-bold text-slate-800 text-base">{payment.customer_name}</h3>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                                        <Clock size={10} /> {formatTime(payment.created_at)}
+                                            <div className="flex flex-col items-end gap-2">
+                                                <span className="text-2xl font-black text-slate-800 tabular-nums">₹{payment.total_amount}</span>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[10px] font-bold text-teal-600 uppercase tracking-widest bg-teal-50 px-2 py-0.5 rounded border border-teal-100">
+                                                        Payment Successful
                                                     </span>
-                                                    <span className="text-slate-300">•</span>
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                                        {payment.payment_mode === 'cash' ? <Banknote size={10} /> : <CreditCard size={10} />} 
-                                                        Mode: {payment.payment_mode || 'Unknown'}
-                                                    </span>
+                                                    <motion.div
+                                                        animate={{ rotate: expandedPaymentId === payment.id ? 180 : 0 }}
+                                                        className="text-slate-400"
+                                                    >
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                    </motion.div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-2xl font-black text-slate-800 tabular-nums">₹{payment.total_amount}</span>
-                                            <span className="text-[10px] font-bold text-teal-600 uppercase tracking-widest bg-teal-50 px-2 py-0.5 rounded mt-1 border border-teal-100">
-                                                Payment Successful
-                                            </span>
-                                        </div>
+                                        <AnimatePresence>
+                                            {expandedPaymentId === payment.id && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="overflow-hidden bg-slate-50/50 px-6 pb-6"
+                                                >
+                                                    <div className="bg-white border border-slate-100 rounded-xl p-6 space-y-4">
+                                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2">Order Details</h4>
+                                                        {payment.items.map((item, idx) => (
+                                                            <div key={idx} className="flex justify-between items-center">
+                                                                <div className="flex items-center gap-4">
+                                                                    <span className="text-sm font-extrabold text-teal-500/50">{item.quantity}×</span>
+                                                                    <span className="text-sm font-bold text-slate-700">{item.name}</span>
+                                                                </div>
+                                                                <span className="text-sm font-bold text-slate-600">₹{item.price * item.quantity}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 ))}
                             </div>
