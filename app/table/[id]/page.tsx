@@ -13,7 +13,7 @@ const MENU = [
     { id: 2, name: 'Veg Biryani', price: 180, category: 'Rice & Bowls', description: 'Basmati rice with garden fresh vegetables.' },
     { id: 3, name: 'Chicken Biryani', price: 250, category: 'Rice & Bowls', description: 'Classic hyderabadi style slow cooked chicken.' },
     { id: 4, name: 'Butter Naan', price: 40, category: 'Sides', description: 'Freshly baked tandoori bread with butter.' },
-    { id: 5, name: 'Coke', price: 30, category: 'Beverages', description: 'Chilled 330ml classic refreshment.' },
+    { id: 5, name: 'Kopico', price: 1, category: 'Beverages', description: 'Chilled 330ml classic refreshment.' },
 ];
 
 // Placeholder for Owner's UPI ID. The user will replace this.
@@ -138,7 +138,7 @@ export default function TablePage() {
 
     const downloadBill = () => {
         const orderItemsText = MENU.filter(item => cart[item.id]).map(item => `${item.name} (${cart[item.id]}x) - ₹${item.price * cart[item.id]}`).join('\n');
-        
+
         const receiptText = `
 =================================
        IN-ROOM DINING RECEIPT
