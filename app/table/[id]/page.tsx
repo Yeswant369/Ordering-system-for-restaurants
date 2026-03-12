@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { Plus, Minus, ShoppingCart, CheckCircle2, Loader2, ArrowRight, Star, X, ShoppingBag } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, CheckCircle2, Loader2, ArrowRight, Star, X, ShoppingBag, QrCode, Banknote, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import QRCode from 'react-qr-code';
 
 // Sample Menu - Premium Descriptions
 const MENU = [
@@ -14,6 +15,9 @@ const MENU = [
     { id: 4, name: 'Butter Naan', price: 40, category: 'Sides', description: 'Freshly baked tandoori bread with butter.' },
     { id: 5, name: 'Coke', price: 30, category: 'Beverages', description: 'Chilled 330ml classic refreshment.' },
 ];
+
+// Placeholder for Owner's UPI ID. The user will replace this.
+const OWNER_UPI_ID = "8332884499@ybl";
 
 interface CartItem {
     name: string;
@@ -30,12 +34,41 @@ export default function TablePage() {
     const [isNameEntered, setIsNameEntered] = useState(false);
     const [cart, setCart] = useState<Record<number, number>>({});
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-    const [orderStatus, setOrderStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [orderStatus, setOrderStatus] = useState<'idle' | 'pending' | 'billed' | 'paid'>('idle');
+    const [orderId, setOrderId] = useState<string | null>(null);
+    const [finalTotal, setFinalTotal] = useState<number>(0);
     const [showCartDrawer, setShowCartDrawer] = useState(false);
 
-    const addToCart = (id: number) => {
-        setCart((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
-    };
+    useEffect(() => {
+        if (!orderId) return;
+
+        console.log("Subscribing to order updates for", orderId);
+        const channel = supabase
+            .channel(`order-${orderId}`)
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
+                (payload) => {
+                    const updatedOrder = payload.new;
+                    console.log("Order updated:", updatedOrder);
+                    if (updatedOrder.status === 'billed') {
+                        setOrderStatus('billed');
+                        setFinalTotal(updatedOrder.total_amount);
+                    } else if (updatedOrder.status === 'paid') {
+                        setOrderStatus('paid');
+                    }
+                }
+            )
+            .subscribe((status) => {
+                console.log("Subscription status:", status);
+            });
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [orderId]);
+
+    const addToCart = (id: number) => setCart((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
 
     const removeFromCart = (id: number) => {
         setCart((prev) => {
@@ -50,9 +83,7 @@ export default function TablePage() {
     };
 
     const cartItemsCount = Object.values(cart).reduce((a, b) => a + b, 0);
-    const totalPrice = MENU.reduce((acc, item) => {
-        return acc + (cart[item.id] || 0) * item.price;
-    }, 0);
+    const totalPrice = MENU.reduce((acc, item) => acc + (cart[item.id] || 0) * item.price, 0);
 
     const placeOrder = async () => {
         if (!customerName || cartItemsCount === 0) return;
@@ -64,29 +95,42 @@ export default function TablePage() {
             quantity: cart[item.id]
         }));
 
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('orders')
             .insert({
                 table_number: parseInt(tableId),
                 customer_name: customerName,
                 items: orderItems,
                 status: 'pending'
-            });
+            })
+            .select('id')
+            .single();
 
         setIsPlacingOrder(false);
-        if (!error) {
-            setOrderStatus('success');
+        if (!error && data) {
+            setOrderId(data.id);
+            setOrderStatus('pending');
             setCart({});
             setShowCartDrawer(false);
         } else {
-            setOrderStatus('error');
+            console.error("Failed to place order:", error);
         }
     };
 
-    // Fade-in animation for page load
-    const containerVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+    const submitPayment = async (mode: 'cash' | 'upi') => {
+        if (!orderId) return;
+        setIsPlacingOrder(true);
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: 'paid', payment_mode: mode })
+            .eq('id', orderId);
+
+        setIsPlacingOrder(false);
+        if (!error) {
+            setOrderStatus('paid');
+        } else {
+            console.error("Failed to submit payment:", error);
+        }
     };
 
     if (!isNameEntered) {
@@ -136,20 +180,98 @@ export default function TablePage() {
         );
     }
 
-    if (orderStatus === 'success') {
+    if (orderStatus === 'pending') {
         return (
             <div className="flex min-h-screen items-center justify-center p-6 bg-gradient-to-br from-teal-50 to-teal-100/50">
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card text-center max-w-sm">
                     <div className="w-20 h-20 bg-teal-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-teal-500/20">
                         <CheckCircle2 size={40} />
                     </div>
-                    <h1 className="text-3xl font-extrabold mb-3 text-slate-800 tracking-tight uppercase">Transmission Sent</h1>
-                    <p className="text-slate-500 font-medium mb-10 text-sm">Your order for Table {tableId} is being processed.</p>
+                    <h1 className="text-3xl font-extrabold mb-3 text-slate-800 tracking-tight uppercase">Order Received</h1>
+                    <p className="text-slate-500 font-medium mb-10 text-sm">Your order is being processed. The owner will send you a bill soon. Please wait...</p>
+                    <div className="flex justify-center">
+                        <Loader2 className="animate-spin text-teal-500" size={32} />
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
+
+    if (orderStatus === 'billed') {
+        const upiUri = `upi://pay?pa=${OWNER_UPI_ID}&pn=Restaurant&am=${finalTotal}&cu=INR`;
+
+        return (
+            <div className="flex min-h-screen items-center justify-center p-6 bg-gradient-to-br from-teal-50 to-teal-100/50">
+                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="glass-card w-full max-w-md p-8 border border-white">
+                    <div className="text-center space-y-4 mb-10">
+                        <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-slate-900/20">
+                            <QrCode className="text-white" size={32} />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-extrabold tracking-tight text-slate-800 uppercase">Final Bill</h1>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Please complete your payment</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-8 text-center space-y-2">
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Amount Due</p>
+                        <p className="text-5xl font-black text-teal-600 tabular-nums tracking-tighter">₹{finalTotal}</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-8 flex flex-col items-center">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6">Scan to Pay via UPI</p>
+                        <div className="p-4 bg-white border-2 border-slate-100 rounded-2xl shadow-sm">
+                            <QRCode value={upiUri} size={200} className="w-full h-auto" />
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-6 bg-slate-50 px-3 py-1.5 rounded-lg">
+                            UPI ID: <span className="text-slate-800 tracking-normal ml-1">{OWNER_UPI_ID}</span>
+                        </p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <a
+                            href={upiUri}
+                            className="w-full btn-gradient py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold shadow-xl shadow-teal-600/20 block"
+                        >
+                            Pay directly via App <ShieldCheck size={18} />
+                        </a>
+                        <button
+                            onClick={() => submitPayment('upi')}
+                            disabled={isPlacingOrder}
+                            className="w-full border-2 border-teal-500 text-teal-600 py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold hover:bg-teal-50 transition-all active:scale-95"
+                        >
+                            {isPlacingOrder ? <Loader2 className="animate-spin" /> : <>I already paid via QR</>}
+                        </button>
+                        <button
+                            onClick={() => submitPayment('cash')}
+                            disabled={isPlacingOrder}
+                            className="w-full bg-slate-800 text-white py-5 rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em] font-bold hover:bg-slate-900 transition-all active:scale-95 shadow-lg shadow-slate-900/20"
+                        >
+                            {isPlacingOrder ? <Loader2 className="animate-spin" /> : <>Pay with Cash <Banknote size={18} /></>}
+                        </button>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
+
+    if (orderStatus === 'paid') {
+        return (
+            <div className="flex min-h-screen items-center justify-center p-6 bg-gradient-to-br from-teal-50 to-teal-100/50">
+                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card text-center max-w-sm">
+                    <div className="w-20 h-20 bg-teal-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-teal-500/20">
+                        <CheckCircle2 size={40} />
+                    </div>
+                    <h1 className="text-3xl font-extrabold mb-3 text-slate-800 tracking-tight uppercase">Payment Complete</h1>
+                    <p className="text-slate-500 font-medium mb-10 text-sm">Thank you for dining with us! Your payment has been marked successfully.</p>
                     <button
-                        onClick={() => setOrderStatus('idle')}
+                        onClick={() => {
+                            setOrderStatus('idle');
+                            setOrderId(null);
+                        }}
                         className="text-teal-600 font-bold uppercase tracking-widest text-[10px] hover:text-teal-700 transition-colors"
                     >
-                        Review Menu Again
+                        Start New Order
                     </button>
                 </motion.div>
             </div>
