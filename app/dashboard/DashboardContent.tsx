@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import {
     Clock, CheckCircle2, ShoppingBag, LogOut, ChefHat, Activity,
@@ -60,8 +60,6 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
     const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
 
-    // Keeps compatibility with prior deployments that referenced useCallback-based helpers.
-    const noopTransitionGuard = useCallback(() => true, []);
 
     useEffect(() => {
         audioRef.current = new Audio('/notification.mp3');
@@ -156,7 +154,6 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         errorLabel: string = 'Action failed'
     ) => {
         setActionError(null);
-        noopTransitionGuard();
 
         const response = await fetch(`/api/staff/orders/${order.id}/transition`, {
             method: 'POST',
