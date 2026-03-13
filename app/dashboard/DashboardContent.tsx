@@ -58,6 +58,7 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
 
     // Expanded payment details
     const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
+    const [actionError, setActionError] = useState<string | null>(null);
 
     useEffect(() => {
         audioRef.current = new Audio('/notification.mp3');
@@ -144,114 +145,131 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
 
     // ─── Order lifecycle actions (using RPCs) ────────────────
 
-    const acceptOrder = async (order: Order) => {
-        // Optimistic update
-        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'accepted' as OrderStatus } : o));
 
-        const { error } = await supabase.rpc('accept_order_staff', {
-            p_order_id: order.id,
-            p_staff_id: user.id,
-        });
+    const runStaffTransition = async (
+        rpcName: string,
+        rpcParams: Record<string, unknown>,
+        fallbackUpdate?: () => Promise<{ error: unknown | null }>,
+        errorLabel: string = 'Action failed'
+    ) => {
+        setActionError(null);
 
-        if (error) {
-            console.error("Error accepting order:", error);
-            // Fallback direct update
-            const { error: fallbackError } = await supabase
-                .from('orders')
-                .update({ status: 'accepted', accepted_at: new Date().toISOString(), accepted_by: user.id })
-                .eq('id', order.id);
-            if (fallbackError) fetchData();
+        const { error } = await supabase.rpc(rpcName, rpcParams);
+
+        if (!error) {
+            await fetchData();
+            return true;
         }
+
+        console.error(`${errorLabel} (RPC):`, error);
+
+        if (fallbackUpdate) {
+            const fallbackResult = await fallbackUpdate();
+            if (!fallbackResult.error) {
+                await fetchData();
+                return true;
+            }
+            console.error(`${errorLabel} (fallback):`, fallbackResult.error);
+        }
+
+        setActionError(`${errorLabel}. Please refresh and try again.`);
+        await fetchData();
+        return false;
+    };
+
+    const acceptOrder = async (order: Order) => {
+        await runStaffTransition(
+            'accept_order_staff',
+            { p_order_id: order.id, p_staff_id: user.id },
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'accepted', accepted_at: new Date().toISOString(), accepted_by: user.id })
+                    .eq('id', order.id);
+                return { error };
+            },
+            'Unable to accept order'
+        );
     };
 
     const rejectOrder = async (order: Order, reason: string) => {
-        setOrders(prev => prev.filter(o => o.id !== order.id));
-
-        const { error } = await supabase.rpc('reject_order_staff', {
-            p_order_id: order.id,
-            p_staff_id: user.id,
-            p_reason: reason || 'Rejected by staff',
-        });
-
-        if (error) {
-            console.error("Error rejecting order:", error);
-            const { error: fallbackError } = await supabase
-                .from('orders')
-                .update({ status: 'rejected', rejected_at: new Date().toISOString(), rejection_reason: reason || 'Rejected by staff' })
-                .eq('id', order.id);
-            if (fallbackError) fetchData();
-        }
+        await runStaffTransition(
+            'reject_order_staff',
+            { p_order_id: order.id, p_staff_id: user.id, p_reason: reason || 'Rejected by staff' },
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'rejected', rejected_at: new Date().toISOString(), rejection_reason: reason || 'Rejected by staff' })
+                    .eq('id', order.id);
+                return { error };
+            },
+            'Unable to reject order'
+        );
 
         setRejectingOrder(null);
         setRejectionReason('');
     };
 
     const markPreparing = async (order: Order) => {
-        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'preparing' as OrderStatus } : o));
-
-        const { error } = await supabase.rpc('preparing_order_staff', {
-            p_order_id: order.id,
-            p_staff_id: user.id,
-        });
-
-        if (error) {
-            const { error: fallbackError } = await supabase
-                .from('orders')
-                .update({ status: 'preparing' })
-                .eq('id', order.id);
-            if (fallbackError) fetchData();
-        }
+        await runStaffTransition(
+            'preparing_order_staff',
+            { p_order_id: order.id, p_staff_id: user.id },
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'preparing' })
+                    .eq('id', order.id);
+                return { error };
+            },
+            'Unable to mark order as preparing'
+        );
     };
 
     const markReady = async (order: Order) => {
-        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'ready' as OrderStatus } : o));
-
-        const { error } = await supabase.rpc('ready_order_staff', {
-            p_order_id: order.id,
-            p_staff_id: user.id,
-        });
-
-        if (error) {
-            const { error: fallbackError } = await supabase
-                .from('orders')
-                .update({ status: 'ready', ready_at: new Date().toISOString() })
-                .eq('id', order.id);
-            if (fallbackError) fetchData();
-        }
+        await runStaffTransition(
+            'ready_order_staff',
+            { p_order_id: order.id, p_staff_id: user.id },
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'ready', ready_at: new Date().toISOString() })
+                    .eq('id', order.id);
+                return { error };
+            },
+            'Unable to mark order as ready'
+        );
     };
 
     const generateBill = async (order: Order) => {
         const total = order.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'billed' as OrderStatus, total_amount: total } : o));
 
-        const { error } = await supabase
-            .from('orders')
-            .update({ status: 'billed', total_amount: total, billed_at: new Date().toISOString() })
-            .eq('id', order.id);
-
-        if (error) {
-            console.error("Error generating bill:", error);
-            fetchData();
-        }
+        await runStaffTransition(
+            'generate_bill_staff',
+            { p_order_id: order.id, p_staff_id: user.id, p_total_amount: total },
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'billed', total_amount: total, billed_at: new Date().toISOString() })
+                    .eq('id', order.id);
+                return { error };
+            },
+            'Unable to generate bill'
+        );
     };
 
     const confirmPayment = async (order: Order, mode: 'cash' | 'upi') => {
-        setOrders(prev => prev.filter(o => o.id !== order.id));
-
-        const { error } = await supabase.rpc('confirm_payment_staff', {
-            p_order_id: order.id,
-            p_payment_mode: mode,
-            p_staff_id: user.id,
-        });
-
-        if (error) {
-            console.error("Error confirming payment:", error);
-            const { error: fallbackError } = await supabase
-                .from('orders')
-                .update({ status: 'paid', payment_mode: mode, paid_at: new Date().toISOString(), paid_verified_by: user.id })
-                .eq('id', order.id);
-            if (fallbackError) fetchData();
-        }
+        await runStaffTransition(
+            'confirm_payment_staff',
+            { p_order_id: order.id, p_payment_mode: mode, p_staff_id: user.id },
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'paid', payment_mode: mode, paid_at: new Date().toISOString(), paid_verified_by: user.id })
+                    .eq('id', order.id);
+                return { error };
+            },
+            'Unable to confirm payment'
+        );
     };
 
     // ─── Export ──────────────────────────────────────────────
@@ -512,6 +530,11 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
                 </header>
 
                 {/* Main Content Area */}
+                {actionError && (
+                    <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                        {actionError}
+                    </div>
+                )}
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                         {[1, 2, 3].map(i => (

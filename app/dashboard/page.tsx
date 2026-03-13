@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     }
 
     // 2. Check staff_roles table (DB-driven, no hardcoded emails)
-    const { data: staffRole, error: staffError } = await supabase
+    let { data: staffRole, error: staffError } = await supabase
         .from('staff_roles')
         .select('role, is_active')
         .eq('user_id', user.id)
@@ -31,15 +31,40 @@ export default async function DashboardPage() {
     // Determine role: prefer staff_roles, fallback to profiles
     let role = 'unauthorized';
 
+    const LEGACY_STAFF_EMAILS = [
+        'yeswantsai9@gmail.com',
+        'reliefreplyof21@gmail.com',
+    ];
+
+    // Auto-migrate legacy staff to staff_roles so RLS + RPC checks succeed
+    // and dashboard actions (accept, bill, payment confirmation) actually persist.
+    if ((!staffRole || staffError) && user.email && LEGACY_STAFF_EMAILS.includes(user.email)) {
+        const fallbackRole = (profile && !profileError && profile.role) ? profile.role : 'admin';
+
+        await supabase
+            .from('staff_roles')
+            .upsert({
+                user_id: user.id,
+                email: user.email,
+                role: fallbackRole,
+                is_active: true,
+            }, { onConflict: 'user_id' });
+
+        // Re-fetch after migration attempt
+        const { data: refreshedStaffRole, error: refreshedStaffError } = await supabase
+            .from('staff_roles')
+            .select('role, is_active')
+            .eq('user_id', user.id)
+            .single();
+
+        staffRole = refreshedStaffRole;
+        staffError = refreshedStaffError;
+    }
+
     if (staffRole && !staffError && staffRole.is_active) {
         role = staffRole.role;
     } else if (profile && !profileError) {
-        // Legacy fallback: check hardcoded emails ONLY if staff_roles table doesn't exist yet
-        const LEGACY_STAFF_EMAILS = [
-            'yeswantsai9@gmail.com',
-            'reliefreplyof21@gmail.com',
-        ];
-
+        // Legacy fallback: temporary compatibility path
         if (user.email && LEGACY_STAFF_EMAILS.includes(user.email)) {
             role = profile.role;
         }
