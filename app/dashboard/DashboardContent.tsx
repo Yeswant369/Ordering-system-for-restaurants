@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import {
     Clock, CheckCircle2, ShoppingBag, LogOut, ChefHat, Activity,
@@ -170,30 +170,34 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
 
 
     const runStaffTransition = async (
-        action: 'accept' | 'reject' | 'preparing' | 'ready' | 'bill' | 'confirm_payment',
-        order: Order,
-        payload: Record<string, unknown> = {},
-        errorLabel: string = 'Action failed'
-    ) => {
-        setActionError(null);
+    action: 'accept' | 'reject' | 'preparing' | 'ready' | 'bill' | 'confirm_payment',
+    order: Order,
+    payload: Record<string, unknown> = {},
+    errorLabel: string = 'Action failed'
+) => {
 
-        const response = await fetch(`/api/staff/orders/${order.id}/transition`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, ...payload }),
-        });
+    // ⭐ Ensure role exists before API call
+    await ensureActiveStaffRole();
 
-        if (!response.ok) {
-            const body = await response.json().catch(() => ({}));
-            const detail = typeof body?.error === 'string' ? ` (${body.error})` : '';
-            setActionError(`${errorLabel}${detail}. Please refresh and try again.`);
-            await fetchData();
-            return false;
-        }
+    setActionError(null);
 
+    const response = await fetch(`/api/staff/orders/${order.id}/transition`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...payload }),
+    });
+
+    if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        const detail = typeof body?.error === 'string' ? ` (${body.error})` : '';
+        setActionError(`${errorLabel}${detail}. Please refresh and try again.`);
         await fetchData();
-        return true;
-    };
+        return false;
+    }
+
+    await fetchData();
+    return true;
+};
 
     const acceptOrder = async (order: Order) => {
         await runStaffTransition('accept', order, {}, 'Unable to accept order');
