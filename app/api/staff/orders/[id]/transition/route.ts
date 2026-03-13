@@ -149,7 +149,7 @@ export async function POST(
         const { data, error } = await db.from('orders')
             .update({ status: 'paid', payment_mode: body.paymentMode, paid_at: now, paid_verified_by: user.id })
             .eq('id', orderId)
-            .in('status', ['payment_submitted', 'cash_pending', 'billed', 'bill_sent'])
+            .eq('id', orderId)
             .select('id');
         if (error) return NextResponse.json({ error: error.message }, { status: 400 });
         const noRowsError = failIfNoRowsUpdated(data, 'confirm_payment');
