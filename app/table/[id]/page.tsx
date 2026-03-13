@@ -225,31 +225,53 @@ export default function TablePage() {
         if (timeoutRef2.current) clearTimeout(timeoutRef2.current);
     }
 
-    // ─── Background polling fallback ─────────────────────────
+    // ─── Background polling fallback (and safety net) ────────
     function startPolling(oid: string) {
-        if (isPolling) return;
+        // Prevent duplicate intervals
+        if (pollIntervalRef.current) return;
+
         setIsPolling(true);
         pollIntervalRef.current = setInterval(() => {
             fetchOrderStatus(oid);
         }, POLL_INTERVAL);
     }
 
+    function stopPolling() {
+        if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+        }
+        setIsPolling(false);
+    }
+
+    // Always poll for non-terminal active orders as a resilience safety net,
+    // even if realtime appears connected. This avoids "stuck on pending" UI
+    // when realtime events are delayed/dropped.
+    useEffect(() => {
+        if (!orderId || orderStatus === 'idle') {
+            stopPolling();
+            return;
+        }
+
+        const terminal = ['paid', 'rejected', 'cancelled'].includes(orderStatus);
+        if (terminal) {
+            stopPolling();
+            return;
+        }
+
+        // Sync once immediately, then keep polling.
+        fetchOrderStatus(orderId);
+        startPolling(orderId);
+
+        return () => {
+            // no-op; interval lifecycle handled by stopPolling above and unmount cleanup below
+        };
+    }, [orderId, orderStatus, fetchOrderStatus]);
+
     // Cleanup polling on unmount
     useEffect(() => {
-        return () => {
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-        };
+        return () => stopPolling();
     }, []);
-
-    // Stop polling when order reaches terminal state
-    useEffect(() => {
-        if (['paid', 'rejected', 'cancelled'].includes(orderStatus)) {
-            if (pollIntervalRef.current) {
-                clearInterval(pollIntervalRef.current);
-                setIsPolling(false);
-            }
-        }
-    }, [orderStatus]);
 
     // ─── Cart operations ─────────────────────────────────────
     const addToCart = (id: number) => setCart((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
