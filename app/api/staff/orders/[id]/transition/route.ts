@@ -83,7 +83,7 @@ export async function POST(
         const { data, error } = await db.from('orders')
             .update({ status: 'accepted', accepted_at: now, accepted_by: user.id })
             .eq('id', orderId)
-            .eq('status', 'pending')
+            .in('status', ['pending', 'order_received'])
             .select('id');
         if (error) return NextResponse.json({ error: error.message }, { status: 400 });
         const noRowsError = failIfNoRowsUpdated(data, 'accept');
