@@ -33,13 +33,12 @@ export async function POST(
 
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     const db = (serviceRoleKey && supabaseUrl)
         ? createSupabaseClient(supabaseUrl, serviceRoleKey)
-        : createSupabaseClient(supabaseUrl!, anonKey!);
+        : authClient;
 
-    const { data: staffRole } = await db
+    const { data: staffRole } = await authClient
         .from('staff_roles')
         .select('role, is_active')
         .eq('user_id', user.id)
@@ -48,7 +47,7 @@ export async function POST(
     let role = staffRole?.is_active ? staffRole.role : null;
 
     if (!role) {
-        const { data: profile } = await db
+        const { data: profile } = await authClient
             .from('profiles')
             .select('role')
             .eq('id', user.id)
@@ -56,9 +55,13 @@ export async function POST(
 
         if (profile?.role && ALLOWED_ROLES.has(profile.role)) {
             role = profile.role;
-            await db
-                .from('staff_roles')
-                .upsert({ user_id: user.id, email: user.email, role, is_active: true }, { onConflict: 'user_id' });
+
+            // Best-effort self-heal only when service role is available.
+            if (serviceRoleKey && supabaseUrl) {
+                await db
+                    .from('staff_roles')
+                    .upsert({ user_id: user.id, email: user.email, role, is_active: true }, { onConflict: 'user_id' });
+            }
         }
     }
 
@@ -69,40 +72,83 @@ export async function POST(
     const orderId = params.id;
     const now = new Date().toISOString();
 
+    const failIfNoRowsUpdated = (updatedRows: Array<{ id: string }> | null, actionLabel: string) => {
+        if (!updatedRows || updatedRows.length === 0) {
+            return NextResponse.json({ error: `No rows updated for ${actionLabel}. Order may be in a different state.` }, { status: 409 });
+        }
+        return null;
+    };
+
     if (body.action === 'accept') {
-        const { error } = await db.from('orders').update({ status: 'accepted', accepted_at: now, accepted_by: user.id }).eq('id', orderId).eq('status', 'pending');
+        const { data, error } = await db.from('orders')
+            .update({ status: 'accepted', accepted_at: now, accepted_by: user.id })
+            .eq('id', orderId)
+            .eq('status', 'pending')
+            .select('id');
         if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+        const noRowsError = failIfNoRowsUpdated(data, 'accept');
+        if (noRowsError) return noRowsError;
     }
 
     if (body.action === 'reject') {
-        const { error } = await db.from('orders').update({ status: 'rejected', rejected_at: now, rejection_reason: body.reason || 'Rejected by staff' }).eq('id', orderId).eq('status', 'pending');
+        const { data, error } = await db.from('orders')
+            .update({ status: 'rejected', rejected_at: now, rejection_reason: body.reason || 'Rejected by staff' })
+            .eq('id', orderId)
+            .eq('status', 'pending')
+            .select('id');
         if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+        const noRowsError = failIfNoRowsUpdated(data, 'reject');
+        if (noRowsError) return noRowsError;
     }
 
     if (body.action === 'preparing') {
-        const { error } = await db.from('orders').update({ status: 'preparing' }).eq('id', orderId).eq('status', 'accepted');
+        const { data, error } = await db.from('orders')
+            .update({ status: 'preparing' })
+            .eq('id', orderId)
+            .eq('status', 'accepted')
+            .select('id');
         if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+        const noRowsError = failIfNoRowsUpdated(data, 'preparing');
+        if (noRowsError) return noRowsError;
     }
 
     if (body.action === 'ready') {
-        const { error } = await db.from('orders').update({ status: 'ready', ready_at: now }).eq('id', orderId).eq('status', 'preparing');
+        const { data, error } = await db.from('orders')
+            .update({ status: 'ready', ready_at: now })
+            .eq('id', orderId)
+            .eq('status', 'preparing')
+            .select('id');
         if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+        const noRowsError = failIfNoRowsUpdated(data, 'ready');
+        if (noRowsError) return noRowsError;
     }
 
     if (body.action === 'bill') {
         if (typeof body.totalAmount !== 'number') {
             return NextResponse.json({ error: 'totalAmount is required' }, { status: 400 });
         }
-        const { error } = await db.from('orders').update({ status: 'billed', total_amount: body.totalAmount, billed_at: now }).eq('id', orderId).eq('status', 'ready');
+        const { data, error } = await db.from('orders')
+            .update({ status: 'billed', total_amount: body.totalAmount, billed_at: now })
+            .eq('id', orderId)
+            .eq('status', 'ready')
+            .select('id');
         if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+        const noRowsError = failIfNoRowsUpdated(data, 'bill');
+        if (noRowsError) return noRowsError;
     }
 
     if (body.action === 'confirm_payment') {
         if (!body.paymentMode) {
             return NextResponse.json({ error: 'paymentMode is required' }, { status: 400 });
         }
-        const { error } = await db.from('orders').update({ status: 'paid', payment_mode: body.paymentMode, paid_at: now, paid_verified_by: user.id }).eq('id', orderId).in('status', ['payment_submitted', 'cash_pending', 'billed']);
+        const { data, error } = await db.from('orders')
+            .update({ status: 'paid', payment_mode: body.paymentMode, paid_at: now, paid_verified_by: user.id })
+            .eq('id', orderId)
+            .in('status', ['payment_submitted', 'cash_pending', 'billed'])
+            .select('id');
         if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+        const noRowsError = failIfNoRowsUpdated(data, 'confirm_payment');
+        if (noRowsError) return noRowsError;
     }
 
     return NextResponse.json({ ok: true });
