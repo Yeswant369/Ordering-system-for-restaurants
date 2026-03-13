@@ -149,7 +149,7 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
     const runStaffTransition = async (
         rpcName: string,
         rpcParams: Record<string, unknown>,
-        fallbackUpdate?: () => Promise<{ error: unknown }>,
+        fallbackUpdate?: () => Promise<{ error: unknown | null }>,
         errorLabel: string = 'Action failed'
     ) => {
         setActionError(null);
@@ -181,10 +181,13 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         await runStaffTransition(
             'accept_order_staff',
             { p_order_id: order.id, p_staff_id: user.id },
-            () => supabase
-                .from('orders')
-                .update({ status: 'accepted', accepted_at: new Date().toISOString(), accepted_by: user.id })
-                .eq('id', order.id),
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'accepted', accepted_at: new Date().toISOString(), accepted_by: user.id })
+                    .eq('id', order.id);
+                return { error };
+            },
             'Unable to accept order'
         );
     };
@@ -193,10 +196,13 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         await runStaffTransition(
             'reject_order_staff',
             { p_order_id: order.id, p_staff_id: user.id, p_reason: reason || 'Rejected by staff' },
-            () => supabase
-                .from('orders')
-                .update({ status: 'rejected', rejected_at: new Date().toISOString(), rejection_reason: reason || 'Rejected by staff' })
-                .eq('id', order.id),
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'rejected', rejected_at: new Date().toISOString(), rejection_reason: reason || 'Rejected by staff' })
+                    .eq('id', order.id);
+                return { error };
+            },
             'Unable to reject order'
         );
 
@@ -208,10 +214,13 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         await runStaffTransition(
             'preparing_order_staff',
             { p_order_id: order.id, p_staff_id: user.id },
-            () => supabase
-                .from('orders')
-                .update({ status: 'preparing' })
-                .eq('id', order.id),
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'preparing' })
+                    .eq('id', order.id);
+                return { error };
+            },
             'Unable to mark order as preparing'
         );
     };
@@ -220,10 +229,13 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         await runStaffTransition(
             'ready_order_staff',
             { p_order_id: order.id, p_staff_id: user.id },
-            () => supabase
-                .from('orders')
-                .update({ status: 'ready', ready_at: new Date().toISOString() })
-                .eq('id', order.id),
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'ready', ready_at: new Date().toISOString() })
+                    .eq('id', order.id);
+                return { error };
+            },
             'Unable to mark order as ready'
         );
     };
@@ -234,10 +246,13 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         await runStaffTransition(
             'generate_bill_staff',
             { p_order_id: order.id, p_staff_id: user.id, p_total_amount: total },
-            () => supabase
-                .from('orders')
-                .update({ status: 'billed', total_amount: total, billed_at: new Date().toISOString() })
-                .eq('id', order.id),
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'billed', total_amount: total, billed_at: new Date().toISOString() })
+                    .eq('id', order.id);
+                return { error };
+            },
             'Unable to generate bill'
         );
     };
@@ -246,10 +261,13 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         await runStaffTransition(
             'confirm_payment_staff',
             { p_order_id: order.id, p_payment_mode: mode, p_staff_id: user.id },
-            () => supabase
-                .from('orders')
-                .update({ status: 'paid', payment_mode: mode, paid_at: new Date().toISOString(), paid_verified_by: user.id })
-                .eq('id', order.id),
+            async () => {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'paid', payment_mode: mode, paid_at: new Date().toISOString(), paid_verified_by: user.id })
+                    .eq('id', order.id);
+                return { error };
+            },
             'Unable to confirm payment'
         );
     };
