@@ -79,28 +79,33 @@ export async function POST(
         return null;
     };
 
-    if (body.action === 'accept') {
-        const { data, error } = await db.from('orders')
-            .update({ status: 'accepted', accepted_at: now, accepted_by: user.id })
-            .eq('id', orderId)
-            .in('status', ['pending', 'order_received', 'Order Received'])
-            .select('id');
-        if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-        const noRowsError = failIfNoRowsUpdated(data, 'accept');
-        if (noRowsError) return noRowsError;
-    }
+   if (body.action === 'accept') {
+    const { data, error } = await db
+        .from('orders')
+        .update({
+            status: 'accepted',
+            accepted_at: now,
+            accepted_by: user.id
+        })
+        .eq('id', orderId)
+        .select('id');
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+}
 
     if (body.action === 'reject') {
-        const { data, error } = await db.from('orders')
-            .update({ status: 'rejected', rejected_at: now, rejection_reason: body.reason || 'Rejected by staff' })
-            .eq('id', orderId)
-            .in('status', ['pending', 'order_received', 'Order Received'])
-            .select('id');
-        if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-        const noRowsError = failIfNoRowsUpdated(data, 'reject');
-        if (noRowsError) return noRowsError;
-    }
+    const { data, error } = await db
+        .from('orders')
+        .update({
+            status: 'rejected',
+            rejected_at: now,
+            rejection_reason: body.reason || 'Rejected by staff'
+        })
+        .eq('id', orderId)
+        .select('id');
 
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+}
     if (body.action === 'preparing') {
         const { data, error } = await db.from('orders')
             .update({ status: 'preparing' })
