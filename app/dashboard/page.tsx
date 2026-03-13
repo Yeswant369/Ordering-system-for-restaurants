@@ -14,33 +14,43 @@ export default async function DashboardPage() {
         redirect('/login')
     }
 
-    // 2. Fetch profile role
-    const { data: profile, error } = await supabase
+    // 2. Check staff_roles table (DB-driven, no hardcoded emails)
+    const { data: staffRole, error: staffError } = await supabase
+        .from('staff_roles')
+        .select('role, is_active')
+        .eq('user_id', user.id)
+        .single()
+
+    // 3. Fallback: Also check profiles table for backward compat
+    const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single()
 
-    // 3. Email-based Access Control (Authorized Staff Only)
-    const STAFF_EMAILS = [
-        'yeswantsai9@gmail.com',
-        // Add more staff emails here
-    ];
+    // Determine role: prefer staff_roles, fallback to profiles
+    let role = 'unauthorized';
 
-    if (!user.email || !STAFF_EMAILS.includes(user.email)) {
+    if (staffRole && !staffError && staffRole.is_active) {
+        role = staffRole.role;
+    } else if (profile && !profileError) {
+        // Legacy fallback: check hardcoded emails ONLY if staff_roles table doesn't exist yet
+        const LEGACY_STAFF_EMAILS = [
+            'yeswantsai9@gmail.com',
+            'reliefreplyof21@gmail.com',
+        ];
+
+        if (user.email && LEGACY_STAFF_EMAILS.includes(user.email)) {
+            role = profile.role;
+        }
+    }
+
+    // 4. Verify authorized role
+    const allowedRoles = ['manager', 'waiter', 'admin', 'kitchen']
+    if (!allowedRoles.includes(role)) {
         redirect('/unauthorized')
     }
 
-    if (error || !profile) {
-        redirect('/unauthorized')
-    }
-
-    // 4. Verify RBAC check
-    const allowedRoles = ['manager', 'waiter', 'admin']
-    if (!allowedRoles.includes(profile.role)) {
-        redirect('/unauthorized')
-    }
-
-    // 4. Render the client-side dashboard with data
-    return <DashboardContent user={user} role={profile.role} />
+    // 5. Render the client-side dashboard with data
+    return <DashboardContent user={user} role={role} />
 }
