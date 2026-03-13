@@ -60,6 +60,29 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
     const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
 
+    const ensureActiveStaffRole = useCallback(async () => {
+        const { data, error } = await supabase
+            .from('staff_roles')
+            .select('is_active')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        if (!error && data?.is_active) return;
+
+        const { error: upsertError } = await supabase
+            .from('staff_roles')
+            .upsert({
+                user_id: user.id,
+                email: user.email,
+                role,
+                is_active: true,
+            }, { onConflict: 'user_id' });
+
+        if (upsertError) {
+            console.error('Unable to sync staff role before action:', upsertError);
+        }
+    }, [role, supabase, user.email, user.id]);
+
     useEffect(() => {
         audioRef.current = new Audio('/notification.mp3');
         fetchData();
@@ -153,6 +176,8 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         errorLabel: string = 'Action failed'
     ) => {
         setActionError(null);
+
+        await ensureActiveStaffRole();
 
         const { error } = await supabase.rpc(rpcName, rpcParams);
 
