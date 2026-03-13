@@ -4,7 +4,7 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 type Action = 'accept' | 'reject' | 'preparing' | 'ready' | 'bill' | 'confirm_payment';
 
-const ALLOWED_ROLES = new Set(['manager', 'waiter', 'admin', 'kitchen']);
+const ALLOWED_ROLES = new Set(['manager','admin','kitchen','waiter'])
 
 export async function POST(
     request: NextRequest,
