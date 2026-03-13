@@ -19,7 +19,7 @@ export const MENU_CATEGORIES = Array.from(new Set(MENU.map(i => i.category)));
 // Timeouts and intervals (in milliseconds)
 export const ORDER_TIMEOUT_INITIAL = 30000;  // 30s before "still working" message
 export const ORDER_TIMEOUT_FINAL = 60000;    // 60s before showing contact staff
-export const POLL_INTERVAL = 12000;          // 12s background polling interval
+export const POLL_INTERVAL = 3000;           // 3s background polling interval for faster customer status sync
 
 // Session storage keys
 export const STORAGE_KEYS = {
