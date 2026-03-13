@@ -224,14 +224,23 @@ export default function DashboardContent({ user, role }: DashboardContentProps) 
         const total = order.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
         setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'billed' as OrderStatus, total_amount: total } : o));
 
-        const { error } = await supabase
-            .from('orders')
-            .update({ status: 'billed', total_amount: total, billed_at: new Date().toISOString() })
-            .eq('id', order.id);
+        const { error } = await supabase.rpc('generate_bill_staff', {
+            p_order_id: order.id,
+            p_staff_id: user.id,
+            p_total_amount: total,
+        });
 
         if (error) {
-            console.error("Error generating bill:", error);
-            fetchData();
+            console.error("Error generating bill via RPC:", error);
+            const { error: fallbackError } = await supabase
+                .from('orders')
+                .update({ status: 'billed', total_amount: total, billed_at: new Date().toISOString() })
+                .eq('id', order.id);
+
+            if (fallbackError) {
+                console.error("Fallback generate bill also failed:", fallbackError);
+                fetchData();
+            }
         }
     };
 
