@@ -6,10 +6,10 @@ import { MenuItem } from './types';
 
 // Normalized Menu with categories — single source of truth
 export const MENU: MenuItem[] = [
-    { id: 1, name: 'Paneer Butter Masala', price: 220, category: 'Signature Mains', description: 'Cottage cheese in vibrant tomato velvet gravy.' },
-    { id: 2, name: 'Veg Biryani', price: 180, category: 'Rice & Bowls', description: 'Basmati rice with garden fresh vegetables.' },
-    { id: 3, name: 'Chicken Biryani', price: 250, category: 'Rice & Bowls', description: 'Classic hyderabadi style slow cooked chicken.' },
-    { id: 4, name: 'Butter Naan', price: 40, category: 'Sides', description: 'Freshly baked tandoori bread with butter.' },
+    { id: 1, name: 'Brownie', price: 100, category: 'Cakes', description: 'Indulge in rich chocolate flavour' },
+    { id: 2, name: 'Choco lava', price: 90, category: 'Cakes', description: 'Volcano of chocolate!' },
+    { id: 3, name: 'Veg-puff', price: 50, category: 'Snaks', description: 'Made with highquality atta!' },
+    { id: 4, name: 'Biscoff-icecream', price: 120, category: 'Ice-creams', description: 'Indulge in the flavour of tru-biscoff at ICY-Bakes' },
     { id: 5, name: 'Kopico', price: 1, category: 'Beverages', description: 'Chilled 330ml classic refreshment.' },
 ];
 
