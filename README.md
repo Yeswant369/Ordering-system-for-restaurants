@@ -1,3 +1,4 @@
+<img width="1440" height="817" alt="image" src="https://github.com/user-attachments/assets/e89f3d26-4841-46ce-ac52-e523945d39c3" />
 #  Smart Ordering System for Restaurants
 
 
